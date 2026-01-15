@@ -123,4 +123,17 @@ struct Pursuing {
     Pursuing(entt::entity t) : target(t) {}
 };
 
+// ============================================================================
+// Movement
+// ============================================================================
+
+struct MovementTarget {
+    Vec2 position = {0.0f, 0.0f};
+    bool hasTarget = false;
+
+    MovementTarget() = default;
+    MovementTarget(Vec2 pos) : position(pos), hasTarget(true) {}
+    MovementTarget(float x, float y) : position(x, y), hasTarget(true) {}
+};
+
 } // namespace fob

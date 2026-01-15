@@ -2,6 +2,7 @@
 #include "core/constants.hpp"
 #include "components/components.hpp"
 #include "systems/render_system.hpp"
+#include "systems/movement_system.hpp"
 #include "simulation/spatial_hash.hpp"
 
 #include <entt/entt.hpp>
@@ -15,7 +16,8 @@ using namespace fob;
 
 // Spawn a line of soldiers
 void spawnFormation(entt::registry& registry, Team::Value team,
-                    Vec2 center, int rows, int cols, float spacing) {
+                    Vec2 center, int rows, int cols, float spacing,
+                    Vec2 targetPos) {
     std::random_device rd;
     std::mt19937 gen(rd());
     std::uniform_real_distribution<float> jitter(-0.3f, 0.3f);
@@ -36,6 +38,7 @@ void spawnFormation(entt::registry& registry, Team::Value team,
             registry.emplace<Stats>(entity, 100.0f, 100.0f, 10.0f, 5.0f, HEAVY_INFANTRY_SPEED);
             registry.emplace<Morale>(entity, 1.0f, 0.0f);
             registry.emplace<UnitType>(entity, UnitType::HeavyInfantry);
+            registry.emplace<MovementTarget>(entity, targetPos);
 
             // Make some units officers (every 50th unit)
             if ((row * cols + col) % 50 == 25) {
@@ -78,6 +81,7 @@ int main(int /*argc*/, char* /*argv*/[]) {
     // Create ECS registry and systems
     entt::registry registry;
     RenderSystem renderSystem(renderer, WINDOW_WIDTH, WINDOW_HEIGHT);
+    MovementSystem movementSystem;
     SpatialHash spatialHash;
 
     // Spawn two opposing armies
@@ -86,8 +90,10 @@ int main(int /*argc*/, char* /*argv*/[]) {
     std::cout << "Spawning armies..." << std::endl;
     auto spawnStart = std::chrono::high_resolution_clock::now();
 
-    spawnFormation(registry, Team::Red, Vec2(0.0f, -150.0f), 100, 500, FORMATION_SPACING);
-    spawnFormation(registry, Team::Blue, Vec2(0.0f, 150.0f), 100, 500, FORMATION_SPACING);
+    // Red army starts at Y=-150, targets Blue's position (Y=150)
+    // Blue army starts at Y=150, targets Red's position (Y=-150)
+    spawnFormation(registry, Team::Red, Vec2(0.0f, -150.0f), 100, 500, FORMATION_SPACING, Vec2(0.0f, 150.0f));
+    spawnFormation(registry, Team::Blue, Vec2(0.0f, 150.0f), 100, 500, FORMATION_SPACING, Vec2(0.0f, -150.0f));
 
     auto spawnEnd = std::chrono::high_resolution_clock::now();
     auto spawnMs = std::chrono::duration_cast<std::chrono::milliseconds>(spawnEnd - spawnStart).count();
@@ -181,22 +187,22 @@ int main(int /*argc*/, char* /*argv*/[]) {
 
         // Fixed timestep simulation updates
         while (accumulator >= FIXED_TIMESTEP) {
-            // TODO: Run simulation systems here
-            // commandSystem.update(registry, FIXED_TIMESTEP);
-            // behaviorSystem.update(registry, FIXED_TIMESTEP);
-            // formationSystem.update(registry, FIXED_TIMESTEP);
-            // movementSystem.update(registry, FIXED_TIMESTEP);
-            // combatSystem.update(registry, FIXED_TIMESTEP);
-            // moraleSystem.update(registry, FIXED_TIMESTEP);
-            // stateSystem.update(registry, FIXED_TIMESTEP);
-
-            // Rebuild spatial hash
+            // Rebuild spatial hash first (needed by movement for routing)
             spatialHash.clear();
             auto posView = registry.view<Position>(entt::exclude<Dead>);
             for (auto entity : posView) {
                 const auto& pos = posView.get<Position>(entity);
                 spatialHash.insert(entity, pos.x, pos.y);
             }
+
+            // Run simulation systems
+            // TODO: commandSystem.update(registry, FIXED_TIMESTEP);
+            // TODO: behaviorSystem.update(registry, FIXED_TIMESTEP);
+            // TODO: formationSystem.update(registry, FIXED_TIMESTEP);
+            movementSystem.update(registry, spatialHash, FIXED_TIMESTEP);
+            // TODO: combatSystem.update(registry, FIXED_TIMESTEP);
+            // TODO: moraleSystem.update(registry, FIXED_TIMESTEP);
+            // TODO: stateSystem.update(registry, FIXED_TIMESTEP);
 
             accumulator -= FIXED_TIMESTEP;
         }
