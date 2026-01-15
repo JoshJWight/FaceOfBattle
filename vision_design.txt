@@ -1,0 +1,17 @@
+In most battle simulator video games, armies fight to the death or nearly so. But in real battles only ~10% of combatants died, and mostly in the rout. I could make a simulator that tries to reproduce the historical outcomes, in the style of my old Shieldwall project.
+
+Desiridata:
+Combatants stay just outside melee range most of the time, generally only moving forward to attack.
+Combatants try to maintain proper spacing within their formation. To make this a reasonable decision, maybe attacking is debuffed if you don’t have enough space to swing your weapon.
+Combatants have a Stamina stat that depletes when they either attack or block. Lower stamina makes them worse at attacking and blocking, maybe makes them move slower. Stamina regenerates only when out of measure. It regenerates more slowly if the combatant is wounded. Combatants with low stamina will attempt to switch out with another behind them.
+The most important stat is Morale. When morale is depleted a combatant will run away. Morale has some base effects from e.g. whether your army is bigger than theirs. It is affected by nearby events - positively if your side kills an enemy, negatively if one of your fellows dies. There’s some boost to morale for being at the front, so that the first units whose morale fails will likely be in the back.
+We want to have a slow grinding down of morale followed by a sudden collapse. A nearby unit running away is a big hit to morale. It shouldn’t collapse if a couple of cowards lose their nerve, but a critical mass of morale failures will snowball into the entire army running.
+Breaches in the line are a huge hit to morale and might cause a chain reaction of collapse all the way down the line.
+Most combatants are not very proactive about attacking. We can have Officer combatants who will attack proactively and encourage their fellows to attack. An officer dying should be a bigger morale hit than a normal combatant.
+Officers will sometimes attempt to push the enemy line back, which is a minor morale win if it succeeds.
+Once the enemy is all running, officers will order pursuit. With the enemy having their backs turned it will be easier to hit them, but combatants will have to be fast enough to catch the enemy.
+Combatants should be divided into light infantry, heavy infantry, cavalry, etc. Cavalry being the fastest, then light infantry, then heavy infantry. Faster units will have an advantage in the rout.
+At some point presumably pursuit will be called off?
+The battlefield map can be customized with some parts of it being difficult terrain that will hinder movement (e.g. mud). Rivers where fighting can’t properly happen, hills where the high ground is an advantage.
+Multi-line formations like the Roman triplex acies should be supported. And there should be reserves that a General AI can order to reinforce weak spots in the line.
+
