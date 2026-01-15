@@ -179,9 +179,20 @@ void MovementSystem::moveFormationMember(entt::registry& registry, entt::entity 
             }
         }
 
-        if (!allyInFront) {
+        if (!allyInFront && member.rank > 0) {
             // No ally in front - advance to fill the gap
-            // Enemy repulsion will still prevent walking directly into enemies
+            // Update formation position so this becomes our new "home"
+            auto& mutableMember = registry.get<FormationMember>(entity);
+            mutableMember.localOffset.y += FORMATION_SPACING;  // Move one rank forward (toward front)
+            mutableMember.rank--;
+
+            // Recalculate target position with updated offset
+            targetWorld.x = formationPos.x + mutableMember.localOffset.x;
+            targetWorld.y = formationPos.y + mutableMember.localOffset.y * formation.facing.y;
+        }
+
+        if (!allyInFront) {
+            // Move toward the (possibly updated) formation position
             movement.x += formation.facing.x * speed * 0.5f;
             movement.y += formation.facing.y * speed * 0.5f;
         }
