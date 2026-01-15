@@ -4,13 +4,13 @@
 #include "systems/render_system.hpp"
 #include "systems/movement_system.hpp"
 #include "systems/formation_system.hpp"
+#include "systems/combat_system.hpp"
 #include "simulation/spatial_hash.hpp"
 
 #include <entt/entt.hpp>
 #include <SDL2/SDL.h>
 
 #include <iostream>
-#include <random>
 #include <chrono>
 
 using namespace fob;
@@ -29,10 +29,6 @@ using namespace fob;
 entt::entity spawnFormation(entt::registry& registry, Team::Value team,
                             Vec2 center, int rows, int cols, float spacing,
                             Vec2 targetPos, Vec2 facing) {
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_real_distribution<float> jitter(-0.2f, 0.2f);
-
     // Create the formation entity
     auto formationEntity = registry.create();
     registry.emplace<Position>(formationEntity, center);
@@ -57,10 +53,6 @@ entt::entity spawnFormation(entt::registry& registry, Team::Value team,
             // For axis-aligned facing: X is always left/right, Y flips based on facing
             float worldX = center.x + localX;
             float worldY = center.y + localY * facing.y;
-
-            // Add jitter for natural look
-            worldX += jitter(gen);
-            worldY += jitter(gen);
 
             registry.emplace<Position>(soldier, worldX, worldY);
             registry.emplace<Velocity>(soldier, 0.0f, 0.0f);
@@ -115,6 +107,7 @@ int main(int /*argc*/, char* /*argv*/[]) {
     RenderSystem renderSystem(renderer, WINDOW_WIDTH, WINDOW_HEIGHT);
     FormationSystem formationSystem;
     MovementSystem movementSystem;
+    CombatSystem combatSystem;
     SpatialHash spatialHash;
 
     // Spawn two opposing armies
@@ -234,7 +227,7 @@ int main(int /*argc*/, char* /*argv*/[]) {
             // Run simulation systems in order
             formationSystem.update(registry, spatialHash, FIXED_TIMESTEP);
             movementSystem.update(registry, spatialHash, FIXED_TIMESTEP);
-            // TODO: combatSystem.update(registry, FIXED_TIMESTEP);
+            combatSystem.update(registry, spatialHash, FIXED_TIMESTEP);
             // TODO: moraleSystem.update(registry, FIXED_TIMESTEP);
 
             accumulator -= FIXED_TIMESTEP;

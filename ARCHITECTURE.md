@@ -55,7 +55,7 @@ src/
 
 1. **FormationSystem** - Advance formations, detect enemy contact
 2. **MovementSystem** - Move individual units (formation-relative or free)
-3. **CombatSystem** (TODO) - Resolve melee combat
+3. **CombatSystem** - Resolve melee combat (see below)
 4. **MoraleSystem** (TODO) - Update morale from events
 
 ## Formation System
@@ -110,6 +110,38 @@ The movement system handles individual unit locomotion.
 - Light Infantry: 8.0 units/sec
 - Cavalry: 15.0 units/sec
 
+## Combat System
+
+The combat system handles melee attacks between soldiers.
+
+### Attack Flow
+
+1. Each soldier looks for enemies within `ATTACK_RANGE` (2.5 units)
+2. If found, enters `InCombat` state with that target
+3. Attack cooldown timer increments each tick
+4. When cooldown reaches `ATTACK_COOLDOWN` (1.5s), attack executes
+5. If no enemy in range, exits `InCombat` state
+
+### Damage Rolls
+
+Each attack rolls for outcome:
+
+| Roll | Chance | Damage |
+|------|--------|--------|
+| Miss | 30% | 0 |
+| Light hit | 56% | 15 |
+| Heavy hit | 14% | 35 |
+
+Actual damage = base damage - (target defense × 0.5), minimum 1.
+
+### Death
+
+When a unit's health reaches 0:
+- Marked with `Dead` component
+- Removed from `InCombat`, `Routing`, `Pursuing`
+- Excluded from spatial hash (won't be targeted)
+- Still rendered as gray corpse
+
 ## Main Loop
 
 ```
@@ -120,6 +152,7 @@ while running:
         rebuild spatial hash
         formationSystem.update()
         movementSystem.update()
+        combatSystem.update()
         accumulator -= FIXED_TIMESTEP
 
     render

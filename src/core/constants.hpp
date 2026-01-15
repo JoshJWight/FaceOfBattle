@@ -14,9 +14,15 @@ constexpr float SPATIAL_HASH_CELL_SIZE = 10.0f;
 // Separation / Collision avoidance
 constexpr float ALLY_SEPARATION_RADIUS = 2.0f;    // Start separating when closer than this
 constexpr float ALLY_SEPARATION_STRENGTH = 8.0f;  // How strongly to push apart
-constexpr float ENEMY_STOP_RADIUS = 3.0f;         // Stop advancing when enemy within this range
+constexpr float ENEMY_STOP_RADIUS = 2.5f;         // Stop advancing when enemy within this range
 
 // Combat
+constexpr float ATTACK_RANGE = 3.0f;              // Distance at which soldiers can attack (must be >= ENEMY_STOP_RADIUS)
+constexpr float ATTACK_COOLDOWN = 1.5f;           // Seconds between attacks
+constexpr float LIGHT_DAMAGE = 15.0f;             // Damage on light hit
+constexpr float HEAVY_DAMAGE = 35.0f;             // Damage on heavy hit
+constexpr float MISS_CHANCE = 0.3f;               // 30% chance to miss
+constexpr float HEAVY_HIT_CHANCE = 0.2f;          // 20% chance for heavy hit (of non-misses)
 constexpr float BASE_ATTACK_STAMINA_COST = 10.0f;
 constexpr float BASE_BLOCK_STAMINA_COST = 5.0f;
 constexpr float STAMINA_REGEN_RATE = 5.0f;

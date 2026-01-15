@@ -69,6 +69,19 @@ void RenderSystem::render(entt::registry& registry) {
             b = static_cast<uint8_t>(b * factor);
         }
 
+        // Flash effects override color
+        if (auto* flash = registry.try_get<FlashEffect>(entity)) {
+            if (flash->isActive()) {
+                if (flash->type == FlashEffect::Attack) {
+                    // White flash for attacking
+                    r = 255; g = 255; b = 255;
+                } else if (flash->type == FlashEffect::Hit) {
+                    // Yellow flash for getting hit
+                    r = 255; g = 255; b = 0;
+                }
+            }
+        }
+
         drawUnit(screenPos.x, screenPos.y, r, g, b, size);
     }
 

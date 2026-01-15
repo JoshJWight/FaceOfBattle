@@ -147,6 +147,23 @@ struct Pursuing {
 };
 
 // ============================================================================
+// Visual Effects
+// ============================================================================
+
+struct FlashEffect {
+    enum Type : uint8_t { None, Attack, Hit };
+    Type type = None;
+    float timer = 0.0f;  // Time remaining on flash
+
+    static constexpr float FLASH_DURATION = 0.15f;
+
+    FlashEffect() = default;
+    FlashEffect(Type t) : type(t), timer(FLASH_DURATION) {}
+
+    bool isActive() const { return timer > 0.0f && type != None; }
+};
+
+// ============================================================================
 // Movement
 // ============================================================================
 
