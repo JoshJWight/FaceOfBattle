@@ -53,9 +53,9 @@ entt::entity spawnFormation(entt::registry& registry, Team::Value team,
 
             Vec2 localOffset(localX, localY);
 
-            // Calculate world position (rotate local offset by facing direction)
-            // For simplicity, assuming facing is axis-aligned for now
-            float worldX = center.x + localX * std::abs(facing.x) + localX * (1.0f - std::abs(facing.y));
+            // Calculate world position
+            // For axis-aligned facing: X is always left/right, Y flips based on facing
+            float worldX = center.x + localX;
             float worldY = center.y + localY * facing.y;
 
             // Add jitter for natural look
