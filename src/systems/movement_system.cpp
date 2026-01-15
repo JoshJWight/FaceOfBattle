@@ -148,12 +148,52 @@ void MovementSystem::moveFormationMember(entt::registry& registry, entt::entity 
             movement.y += toTarget.y * speed * urgency;
         }
     } else if (formation.state == FormationState::Engaged || enemyContact) {
-        // Hold position - only apply minor drift toward formation spot
-        float distToTarget = distance(pos.x, pos.y, targetWorld.x, targetWorld.y);
-        if (distToTarget > FORMATION_SPACING * 0.5f) {
-            Vec2 toTarget = normalize(Vec2(targetWorld.x - pos.x, targetWorld.y - pos.y));
-            movement.x += toTarget.x * speed * 0.3f;  // Gentle drift
-            movement.y += toTarget.y * speed * 0.3f;
+        // Check if there's a gap in front to fill (replacement behavior)
+        bool allyInFront = false;
+        Vec2 frontCheckPos(pos.x, pos.y + formation.facing.y * FORMATION_SPACING);
+
+        // Query for allies directly in front of us (same file, one rank ahead)
+        // Use larger radius to account for spatial hash cell boundaries
+        float queryRadius = FORMATION_SPACING * 1.5f;
+        spatialHash.queryRadius(frontCheckPos.x, frontCheckPos.y, queryRadius, m_nearbyBuffer);
+
+        for (auto other : m_nearbyBuffer) {
+            if (other == entity) continue;
+            if (!registry.valid(other)) continue;
+            if (registry.all_of<Dead>(other)) continue;
+
+            const auto* otherTeam = registry.try_get<Team>(other);
+            if (!otherTeam || otherTeam->value != team.value) continue;
+
+            const auto& otherPos = registry.get<Position>(other);
+
+            // Check actual distance to frontCheckPos (spatial hash returns all in cells)
+            float dx = otherPos.x - frontCheckPos.x;
+            float dy = otherPos.y - frontCheckPos.y;
+            float distSq = dx * dx + dy * dy;
+            float checkRadius = FORMATION_SPACING * 0.7f;  // Slightly larger than half spacing
+
+            if (distSq < checkRadius * checkRadius) {
+                allyInFront = true;
+                break;
+            }
+        }
+
+        if (!allyInFront) {
+            // No ally in front - advance to fill the gap
+            // Enemy repulsion will still prevent walking directly into enemies
+            movement.x += formation.facing.x * speed * 0.5f;
+            movement.y += formation.facing.y * speed * 0.5f;
+        }
+
+        if (enemyContact || allyInFront) {
+            // Hold position - only apply minor drift toward formation spot
+            float distToTarget = distance(pos.x, pos.y, targetWorld.x, targetWorld.y);
+            if (distToTarget > FORMATION_SPACING * 0.5f) {
+                Vec2 toTarget = normalize(Vec2(targetWorld.x - pos.x, targetWorld.y - pos.y));
+                movement.x += toTarget.x * speed * 0.3f;  // Gentle drift
+                movement.y += toTarget.y * speed * 0.3f;
+            }
         }
     }
 
