@@ -101,9 +101,9 @@ int main(int /*argc*/, char* /*argv*/[]) {
     std::cout << "Spawned " << (storage.size() - storage.free_list())
               << " entities in " << spawnMs << "ms" << std::endl;
 
-    // Center camera on battlefield
+    // Center camera on battlefield - zoom 2.0 gives ~3.5px units with visible spacing
     renderSystem.camera().position = Vec2(0.0f, 0.0f);
-    renderSystem.camera().zoom = 0.5f;
+    renderSystem.camera().zoom = 2.0f;
 
     // Main loop
     bool running = true;

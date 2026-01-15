@@ -13,9 +13,11 @@ void RenderSystem::render(entt::registry& registry) {
     SDL_SetRenderDrawColor(m_renderer, 20, 20, 30, 255);
     SDL_RenderClear(m_renderer);
 
-    // Base unit size in pixels (scales with zoom)
-    float baseSize = 3.0f * m_camera.zoom;
-    baseSize = std::clamp(baseSize, 1.0f, 10.0f);
+    // Unit size scales with zoom but stays smaller than formation spacing
+    // to prevent overlap. At formation spacing of 2.5, we use ~80% of that.
+    float spacingPx = FORMATION_SPACING * m_camera.zoom;
+    float baseSize = spacingPx * 0.7f;
+    baseSize = std::clamp(baseSize, 1.0f, 20.0f);
 
     // Render all living units
     auto view = registry.view<Position, Team>(entt::exclude<Dead>);

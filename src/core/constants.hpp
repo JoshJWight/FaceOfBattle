@@ -33,7 +33,7 @@ constexpr float CAVALRY_SPEED = 15.0f;
 constexpr int WINDOW_WIDTH = 1280;
 constexpr int WINDOW_HEIGHT = 720;
 constexpr float DEFAULT_ZOOM = 1.0f;
-constexpr float MIN_ZOOM = 0.1f;
-constexpr float MAX_ZOOM = 5.0f;
+constexpr float MIN_ZOOM = 0.02f;   // Can see entire battlefield
+constexpr float MAX_ZOOM = 20.0f;   // Can see individual units clearly
 
 } // namespace fob
