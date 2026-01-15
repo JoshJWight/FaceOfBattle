@@ -45,6 +45,7 @@ private:
     Camera m_camera;
 
     void drawUnit(float screenX, float screenY, uint8_t r, uint8_t g, uint8_t b, float size);
+    void drawCircle(float screenX, float screenY, uint8_t r, uint8_t g, uint8_t b, float radius);
 };
 
 } // namespace fob

@@ -2,6 +2,7 @@
 #include "components/components.hpp"
 #include "core/constants.hpp"
 #include <algorithm>
+#include <cmath>
 
 namespace fob {
 
@@ -82,7 +83,12 @@ void RenderSystem::render(entt::registry& registry) {
             }
         }
 
-        drawUnit(screenPos.x, screenPos.y, r, g, b, size);
+        // Formation markers are circles, soldiers are squares
+        if (registry.all_of<Formation>(entity)) {
+            drawCircle(screenPos.x, screenPos.y, r, g, b, size * 0.6f);
+        } else {
+            drawUnit(screenPos.x, screenPos.y, r, g, b, size);
+        }
     }
 
     // Render dead units as gray (optional, could be toggled)
@@ -115,6 +121,20 @@ void RenderSystem::drawUnit(float screenX, float screenY, uint8_t r, uint8_t g, 
 
     SDL_Rect rect{x - halfSize, y - halfSize, static_cast<int>(size), static_cast<int>(size)};
     SDL_RenderFillRect(m_renderer, &rect);
+}
+
+void RenderSystem::drawCircle(float screenX, float screenY, uint8_t r, uint8_t g, uint8_t b, float radius) {
+    SDL_SetRenderDrawColor(m_renderer, r, g, b, 255);
+
+    int cx = static_cast<int>(screenX);
+    int cy = static_cast<int>(screenY);
+    int rad = static_cast<int>(radius);
+
+    // Midpoint circle algorithm for filled circle
+    for (int dy = -rad; dy <= rad; dy++) {
+        int dx = static_cast<int>(std::sqrt(rad * rad - dy * dy));
+        SDL_RenderDrawLine(m_renderer, cx - dx, cy + dy, cx + dx, cy + dy);
+    }
 }
 
 } // namespace fob
