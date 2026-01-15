@@ -91,14 +91,37 @@ struct General {};  // tag component
 // Formation
 // ============================================================================
 
+/// Formation state - what the formation as a whole is doing
+enum class FormationState : uint8_t {
+    Advancing,   // Moving toward objective
+    Engaged,     // Front line in contact with enemy, holding position
+    Withdrawing, // Pulling back
+    Broken       // Formation has collapsed, every man for himself
+};
+
+/// Component for formation entities (the formation itself, not its members)
+struct Formation {
+    Vec2 targetPosition = {0.0f, 0.0f};  // Where the formation is trying to go
+    Vec2 facing = {0.0f, 1.0f};          // Direction formation faces (unit vector)
+    FormationState state = FormationState::Advancing;
+    float speed = 5.0f;                  // Formation advance speed
+    int frontRank = 0;                   // Which rank is currently at the front
+
+    Formation() = default;
+    Formation(Vec2 target, Vec2 face, float spd = 5.0f)
+        : targetPosition(target), facing(face), speed(spd) {}
+};
+
+/// Component for soldiers belonging to a formation
 struct FormationMember {
-    FormationId formationId = 0;
-    Vec2 localTargetPos = {0.0f, 0.0f};  // desired pos relative to formation center
-    int rank = 0;  // row in formation: 0 = front, 1 = second, etc.
+    entt::entity formation = entt::null;  // The formation entity this soldier belongs to
+    Vec2 localOffset = {0.0f, 0.0f};      // Position relative to formation center
+    int rank = 0;                          // Row: 0 = front, 1 = second, etc.
+    int file = 0;                          // Column position
 
     FormationMember() = default;
-    FormationMember(FormationId id, Vec2 target, int r)
-        : formationId(id), localTargetPos(target), rank(r) {}
+    FormationMember(entt::entity form, Vec2 offset, int r, int f)
+        : formation(form), localOffset(offset), rank(r), file(f) {}
 };
 
 // ============================================================================

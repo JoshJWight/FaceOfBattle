@@ -27,9 +27,15 @@ public:
     void update(entt::registry& registry, const SpatialHash& spatialHash, float dt);
 
 private:
-    /// Move a normal (non-routing) unit toward its target.
-    void moveTowardTarget(entt::registry& registry, entt::entity entity,
-                          float speed, float dt);
+    /// Move a formation member toward their position in formation.
+    void moveFormationMember(entt::registry& registry, entt::entity entity,
+                             const SpatialHash& spatialHash,
+                             const struct Formation& formation, const struct Position& formationPos,
+                             float speed, float dt);
+
+    /// Move a free unit (no formation) toward their movement target.
+    void moveFreeUnit(entt::registry& registry, entt::entity entity,
+                      const SpatialHash& spatialHash, float speed, float dt);
 
     /// Move a routing unit away from enemies.
     void fleeFromEnemies(entt::registry& registry, entt::entity entity,

@@ -3,6 +3,7 @@
 #include "components/components.hpp"
 #include "systems/render_system.hpp"
 #include "systems/movement_system.hpp"
+#include "systems/formation_system.hpp"
 #include "simulation/spatial_hash.hpp"
 
 #include <entt/entt.hpp>
@@ -14,38 +15,69 @@
 
 using namespace fob;
 
-// Spawn a line of soldiers
-void spawnFormation(entt::registry& registry, Team::Value team,
-                    Vec2 center, int rows, int cols, float spacing,
-                    Vec2 targetPos) {
+/// Spawn a formation of soldiers.
+/// Creates a formation entity and populates it with soldiers.
+/// @param registry The ECS registry
+/// @param team Which team this formation belongs to
+/// @param center Starting center position of the formation
+/// @param rows Number of ranks (depth)
+/// @param cols Number of files (width)
+/// @param spacing Distance between soldiers
+/// @param targetPos Where the formation should advance toward
+/// @param facing Direction the formation faces (should point toward enemy)
+/// @return The formation entity
+entt::entity spawnFormation(entt::registry& registry, Team::Value team,
+                            Vec2 center, int rows, int cols, float spacing,
+                            Vec2 targetPos, Vec2 facing) {
     std::random_device rd;
     std::mt19937 gen(rd());
-    std::uniform_real_distribution<float> jitter(-0.3f, 0.3f);
+    std::uniform_real_distribution<float> jitter(-0.2f, 0.2f);
 
-    float startX = center.x - (cols - 1) * spacing * 0.5f;
-    float startY = center.y - (rows - 1) * spacing * 0.5f;
+    // Create the formation entity
+    auto formationEntity = registry.create();
+    registry.emplace<Position>(formationEntity, center);
+    registry.emplace<Formation>(formationEntity, targetPos, facing, HEAVY_INFANTRY_SPEED);
+    registry.emplace<Team>(formationEntity, team);
 
-    for (int row = 0; row < rows; ++row) {
-        for (int col = 0; col < cols; ++col) {
-            auto entity = registry.create();
+    // Spawn soldiers in the formation
+    // Rank 0 is the front line, facing the enemy
+    // Local coordinates: X = left/right, Y = forward/back relative to facing
+    for (int rank = 0; rank < rows; ++rank) {
+        for (int file = 0; file < cols; ++file) {
+            auto soldier = registry.create();
 
-            float x = startX + col * spacing + jitter(gen);
-            float y = startY + row * spacing + jitter(gen);
+            // Calculate local offset from formation center
+            // Files spread left-right (X), ranks go back from front (Y)
+            float localX = (file - (cols - 1) * 0.5f) * spacing;
+            float localY = -rank * spacing;  // Negative because rank 0 is front
 
-            registry.emplace<Position>(entity, x, y);
-            registry.emplace<Velocity>(entity, 0.0f, 0.0f);
-            registry.emplace<Team>(entity, team);
-            registry.emplace<Stats>(entity, 100.0f, 100.0f, 10.0f, 5.0f, HEAVY_INFANTRY_SPEED);
-            registry.emplace<Morale>(entity, 1.0f, 0.0f);
-            registry.emplace<UnitType>(entity, UnitType::HeavyInfantry);
-            registry.emplace<MovementTarget>(entity, targetPos);
+            Vec2 localOffset(localX, localY);
 
-            // Make some units officers (every 50th unit)
-            if ((row * cols + col) % 50 == 25) {
-                registry.emplace<Officer>(entity, 1);
+            // Calculate world position (rotate local offset by facing direction)
+            // For simplicity, assuming facing is axis-aligned for now
+            float worldX = center.x + localX * std::abs(facing.x) + localX * (1.0f - std::abs(facing.y));
+            float worldY = center.y + localY * facing.y;
+
+            // Add jitter for natural look
+            worldX += jitter(gen);
+            worldY += jitter(gen);
+
+            registry.emplace<Position>(soldier, worldX, worldY);
+            registry.emplace<Velocity>(soldier, 0.0f, 0.0f);
+            registry.emplace<Team>(soldier, team);
+            registry.emplace<Stats>(soldier, 100.0f, 100.0f, 10.0f, 5.0f, HEAVY_INFANTRY_SPEED);
+            registry.emplace<Morale>(soldier, 1.0f, 0.0f);
+            registry.emplace<UnitType>(soldier, UnitType::HeavyInfantry);
+            registry.emplace<FormationMember>(soldier, formationEntity, localOffset, rank, file);
+
+            // Make some units officers (center of each rank)
+            if (file == cols / 2 && rank % 3 == 0) {
+                registry.emplace<Officer>(soldier, 1);
             }
         }
     }
+
+    return formationEntity;
 }
 
 int main(int /*argc*/, char* /*argv*/[]) {
@@ -81,19 +113,23 @@ int main(int /*argc*/, char* /*argv*/[]) {
     // Create ECS registry and systems
     entt::registry registry;
     RenderSystem renderSystem(renderer, WINDOW_WIDTH, WINDOW_HEIGHT);
+    FormationSystem formationSystem;
     MovementSystem movementSystem;
     SpatialHash spatialHash;
 
     // Spawn two opposing armies
-    // Each army: 100 rows x 500 cols = 50,000 units
-    // Total: 100,000 units for testing
+    // Each army: 10 rows x 50 cols = 500 units
+    // Total: 1,000 units + 2 formation entities
     std::cout << "Spawning armies..." << std::endl;
     auto spawnStart = std::chrono::high_resolution_clock::now();
 
-    // Red army starts at Y=-150, targets Blue's position (Y=150)
-    // Blue army starts at Y=150, targets Red's position (Y=-150)
-    spawnFormation(registry, Team::Red, Vec2(0.0f, -150.0f), 100, 500, FORMATION_SPACING, Vec2(0.0f, 150.0f));
-    spawnFormation(registry, Team::Blue, Vec2(0.0f, 150.0f), 100, 500, FORMATION_SPACING, Vec2(0.0f, -150.0f));
+    // Red army at bottom, facing up (toward Blue)
+    spawnFormation(registry, Team::Red, Vec2(0.0f, -30.0f), 10, 50, FORMATION_SPACING,
+                   Vec2(0.0f, 30.0f), Vec2(0.0f, 1.0f));
+
+    // Blue army at top, facing down (toward Red)
+    spawnFormation(registry, Team::Blue, Vec2(0.0f, 30.0f), 10, 50, FORMATION_SPACING,
+                   Vec2(0.0f, -30.0f), Vec2(0.0f, -1.0f));
 
     auto spawnEnd = std::chrono::high_resolution_clock::now();
     auto spawnMs = std::chrono::duration_cast<std::chrono::milliseconds>(spawnEnd - spawnStart).count();
@@ -101,7 +137,7 @@ int main(int /*argc*/, char* /*argv*/[]) {
     std::cout << "Spawned " << (storage.size() - storage.free_list())
               << " entities in " << spawnMs << "ms" << std::endl;
 
-    // Center camera on battlefield - zoom 2.0 gives ~3.5px units with visible spacing
+    // Center camera on battlefield
     renderSystem.camera().position = Vec2(0.0f, 0.0f);
     renderSystem.camera().zoom = 2.0f;
 
@@ -187,22 +223,19 @@ int main(int /*argc*/, char* /*argv*/[]) {
 
         // Fixed timestep simulation updates
         while (accumulator >= FIXED_TIMESTEP) {
-            // Rebuild spatial hash first (needed by movement for routing)
+            // Rebuild spatial hash (needed by systems for queries)
             spatialHash.clear();
-            auto posView = registry.view<Position>(entt::exclude<Dead>);
+            auto posView = registry.view<Position>(entt::exclude<Dead, Formation>);
             for (auto entity : posView) {
                 const auto& pos = posView.get<Position>(entity);
                 spatialHash.insert(entity, pos.x, pos.y);
             }
 
-            // Run simulation systems
-            // TODO: commandSystem.update(registry, FIXED_TIMESTEP);
-            // TODO: behaviorSystem.update(registry, FIXED_TIMESTEP);
-            // TODO: formationSystem.update(registry, FIXED_TIMESTEP);
+            // Run simulation systems in order
+            formationSystem.update(registry, spatialHash, FIXED_TIMESTEP);
             movementSystem.update(registry, spatialHash, FIXED_TIMESTEP);
             // TODO: combatSystem.update(registry, FIXED_TIMESTEP);
             // TODO: moraleSystem.update(registry, FIXED_TIMESTEP);
-            // TODO: stateSystem.update(registry, FIXED_TIMESTEP);
 
             accumulator -= FIXED_TIMESTEP;
         }

@@ -32,6 +32,7 @@ add_executable(${PROJECT_NAME}
     src/main.cpp
     src/systems/render_system.cpp
     src/systems/movement_system.cpp
+    src/systems/formation_system.cpp
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE

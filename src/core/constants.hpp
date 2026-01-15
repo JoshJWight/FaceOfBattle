@@ -11,6 +11,11 @@ constexpr float FORMATION_SPACING = 2.5f;
 constexpr float MORALE_EFFECT_RADIUS = 20.0f;
 constexpr float SPATIAL_HASH_CELL_SIZE = 10.0f;
 
+// Separation / Collision avoidance
+constexpr float ALLY_SEPARATION_RADIUS = 2.0f;    // Start separating when closer than this
+constexpr float ALLY_SEPARATION_STRENGTH = 8.0f;  // How strongly to push apart
+constexpr float ENEMY_STOP_RADIUS = 3.0f;         // Stop advancing when enemy within this range
+
 // Combat
 constexpr float BASE_ATTACK_STAMINA_COST = 10.0f;
 constexpr float BASE_BLOCK_STAMINA_COST = 5.0f;
